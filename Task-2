@@ -1,0 +1,218 @@
+TASK: DATA PROCESSING
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+
+
+df = pd.read_csv(r"C:\Users\Vasanth\Downloads\archive (14)\tested.csv")
+
+
+
+#Data Inspection and Exploration
+
+df.drop
+print(df.head())
+
+
+# Display basic information about the dataset
+print(df.info())
+
+
+
+# Summary statistics for numerical features
+print(df.describe())
+
+
+
+
+# Summary statistics for categorical features
+print(df.describe(include=['object']))
+
+
+
+
+
+#Data Cleaning
+
+
+# Separate numerical and categorical columns
+numerical_cols = df.select_dtypes(include=['number']).columns
+categorical_cols = df.select_dtypes(include=['object']).columns
+
+# Handle missing values for numerical columns
+df[numerical_cols] = df[numerical_cols].fillna(df[numerical_cols].median())
+
+# Handle missing values for categorical columns
+for col in categorical_cols:
+    mode = df[col].mode()
+    if not mode.empty:
+        df[col] = df[col].fillna(mode[0])
+
+# Remove duplicates
+df.drop_duplicates(inplace=True)
+
+# Handle outliers
+df['Age'] = df['Age'].clip(lower=df['Age'].quantile(0.05), upper=df['Age'].quantile(0.95))
+df['Fare'] = df['Fare'].clip(lower=df['Fare'].quantile(0.05), upper=df['Fare'].quantile(0.95))
+
+# Encode categorical variables
+df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+
+# Remove unnecessary columns if not already done
+df.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, inplace=True, errors='ignore')
+
+
+#Feature Engineering
+
+
+# Create new feature: FamilySize
+df['FamilySize'] = df['SibSp'] + df['Parch'] + 1
+
+df.drop
+
+
+
+# Data Splitting
+
+
+
+# Split the dataset into features and target variable
+X = df.drop('Survived', axis=1)
+y = df['Survived']
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+
+
+
+#Model Building and Evaluation
+
+
+
+# Initialize and train the model
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+
+
+# Predict on the test set
+y_pred = model.predict(X_test)
+
+
+
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+
+
+
+#Model Interpretation and Validation
+
+
+
+# Interpret model results (e.g., feature importances)
+feature_importances = pd.Series(model.feature_importances_, index=X_train.columns)
+print("Feature Importances:")
+print(feature_importances)
+
+
+#Model Interpretation and Validation
+
+
+cv_scores = cross_val_score(model, X, y, cv=5)
+print("Cross-Validation Scores:", cv_scores)
+
+
+import joblib
+joblib.dump(model, 'titanic_model.pkl')
+
+
+loaded_model = joblib.load('titanic_model.pkl')
+# Predict with the loaded model
+loaded_pred = loaded_model.predict(X_test)
+loaded_accuracy = accuracy_score(y_test, loaded_pred)
+print("Loaded Model Accuracy:", loaded_accuracy)
+
+
+
+# Define the parameter grid
+param_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'max_depth': [None, 10, 20, 30],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'bootstrap': [True, False]
+}
+
+# Initialize the GridSearchCV
+grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
+
+# Fit the grid search to the data
+grid_search.fit(X_train, y_train)
+
+# Print the best parameters and best score
+print("Best Parameters:", grid_search.best_params_)
+print("Best Score:", grid_search.best_score_)
+
+
+
+# Update the model with the best parameters
+best_model = grid_search.best_estimator_
+
+
+#Random Search
+
+
+param_dist = {
+    'n_estimators': [100, 200, 300, 400, 500],
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'max_depth': [None, 10, 20, 30, 40, 50],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'bootstrap': [True, False]
+}
+random_search = RandomizedSearchCV(estimator=model, param_distributions=param_dist, n_iter=100, cv=5, verbose=2, random_state=42, n_jobs=-1)
+random_search.fit(X_train, y_train)
+print("Best Parameters:", random_search.best_params_)
+print("Best Score:", random_search.best_score_)
+best_model = random_search.best_estimator_
+
+
+#Model Evaluation on Test Data
+
+
+
+# Predict on the test set with the best model
+y_pred_best = best_model.predict(X_test)
+
+# Evaluate model performance
+best_accuracy = accuracy_score(y_test, y_pred_best)
+print("Best Model Accuracy:", best_accuracy)
+
+
+# Evaluate on training data
+train_predictions = best_model.predict(X_train)
+train_accuracy = accuracy_score(y_train, train_predictions)
+print("Training Accuracy:", train_accuracy)
+
+# Evaluate on test data
+test_predictions = best_model.predict(X_test)
+test_accuracy = accuracy_score(y_test, test_predictions)
+print("Test Accuracy:", test_accuracy)
+
+
+
+from sklearn.model_selection import cross_val_score
+
+cv_scores = cross_val_score(best_model, X, y, cv=5)
+print("Cross-Validation Scores:", cv_scores)
+print("Mean Cross-Validation Score:", cv_scores.mean())
+
+
