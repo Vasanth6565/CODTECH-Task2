@@ -19,7 +19,7 @@ Task: DATA PROCESSING
 
 
 Overview of the Project:
-This project aims to build a machine learning model to predict the survival of passengers on the Titanic. The steps involved in this project include data inspection, data cleaning, feature engineering, model building, hyperparameter tuning, and model evaluation. Here’s a detailed breakdown of each step:
+This project aims to build a machine learning model to predict the survival of passengers on the Titanic. The steps involved in this project include data inspection, data cleaning, feature engineering, model building, hyperparameter tuning, and model evaluation. 
 
 1. Data Inspection and Exploration:
 The first step is to understand the dataset by inspecting its structure and summarizing its contents.
